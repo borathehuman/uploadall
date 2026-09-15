@@ -1,0 +1,895 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Liquid Information — Archive</title>
+
+
+<style>
+
+/* =========================
+   기본
+========================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    margin: 0;
+
+    background: #f3f3f3;
+
+    color: #111;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+
+/* =========================
+   헤더
+========================= */
+
+header {
+
+    padding: 30px;
+
+    background: white;
+
+    border-bottom: 1px solid #ddd;
+
+}
+
+header h1 {
+
+    margin: 0;
+
+    font-size: 22px;
+
+    font-weight: 500;
+
+}
+
+header p {
+
+    margin: 8px 0 0;
+
+    color: #777;
+
+    font-size: 13px;
+
+}
+
+
+/* =========================
+   메인
+========================= */
+
+main {
+
+    max-width: 1200px;
+
+    margin: 40px auto;
+
+    padding: 0 25px;
+
+}
+
+
+/* =========================
+   업로드 영역
+========================= */
+
+#dropZone {
+
+    width: 100%;
+
+    min-height: 260px;
+
+    background: white;
+
+    border:
+        1px dashed #999;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+}
+
+
+#dropZone:hover {
+
+    background: #fafafa;
+
+}
+
+
+#dropZone.dragover {
+
+    border:
+        2px solid #111;
+
+    background: #eee;
+
+}
+
+
+.uploadText {
+
+    pointer-events: none;
+
+}
+
+
+.uploadText h2 {
+
+    margin: 0 0 10px;
+
+    font-size: 18px;
+
+    font-weight: 400;
+
+}
+
+
+.uploadText p {
+
+    margin: 0;
+
+    color: #888;
+
+    font-size: 13px;
+
+}
+
+
+#fileInput {
+
+    display: none;
+
+}
+
+
+/* =========================
+   툴바
+========================= */
+
+.toolbar {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin: 25px 0 15px;
+
+}
+
+
+.pageCount {
+
+    font-size: 13px;
+
+    color: #777;
+
+}
+
+
+button {
+
+    border: 1px solid #bbb;
+
+    background: white;
+
+    padding: 8px 14px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+}
+
+
+button:hover {
+
+    background: #eee;
+
+}
+
+
+button.danger {
+
+    color: #b00000;
+
+}
+
+
+/* =========================
+   이미지 그리드
+========================= */
+
+#imageGrid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(180px, 1fr));
+
+    gap: 18px;
+
+}
+
+
+/* =========================
+   이미지 카드
+========================= */
+
+.imageCard {
+
+    background: white;
+
+    border: 1px solid #ddd;
+
+}
+
+
+.imagePreview {
+
+    width: 100%;
+
+    height: 240px;
+
+    background: #eee;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: hidden;
+
+}
+
+
+.imagePreview img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: contain;
+
+}
+
+
+.imageInfo {
+
+    padding: 10px;
+
+    border-top: 1px solid #eee;
+
+}
+
+
+.imageNumber {
+
+    font-size: 12px;
+
+    color: #888;
+
+    margin-bottom: 4px;
+
+}
+
+
+.imageName {
+
+    font-size: 12px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.imageButtons {
+
+    display: flex;
+
+    border-top: 1px solid #eee;
+
+}
+
+
+.imageButtons button {
+
+    flex: 1;
+
+    border: 0;
+
+    border-right: 1px solid #eee;
+
+}
+
+
+.imageButtons button:last-child {
+
+    border-right: 0;
+
+}
+
+
+/* =========================
+   빈 상태
+========================= */
+
+.empty {
+
+    grid-column: 1 / -1;
+
+    text-align: center;
+
+    padding: 80px 20px;
+
+    color: #aaa;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>Liquid Information</h1>
+
+    <p>Image Archive</p>
+
+</header>
+
+
+<main>
+
+
+    <!-- =====================
+         업로드
+    ====================== -->
+
+    <div id="dropZone">
+
+        <div class="uploadText">
+
+            <h2>
+                Drop images here
+            </h2>
+
+            <p>
+                JPG / PNG 이미지를
+                드래그하거나 클릭해서 선택하세요.
+            </p>
+
+        </div>
+
+
+        <input
+            type="file"
+            id="fileInput"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+        >
+
+    </div>
+
+
+    <!-- =====================
+         툴바
+    ====================== -->
+
+    <div class="toolbar">
+
+        <div
+            class="pageCount"
+            id="pageCount"
+        >
+            0 images
+        </div>
+
+
+        <button
+            class="danger"
+            onclick="clearImages()"
+        >
+            Clear
+        </button>
+
+    </div>
+
+
+    <!-- =====================
+         이미지
+    ====================== -->
+
+    <div id="imageGrid">
+
+        <div class="empty">
+
+            아직 업로드된 이미지가 없습니다.
+
+        </div>
+
+    </div>
+
+
+</main>
+
+
+
+<script>
+
+/* =================================================
+   데이터
+================================================= */
+
+let images = [];
+
+
+/* =================================================
+   DOM
+================================================= */
+
+const dropZone =
+    document.getElementById("dropZone");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const imageGrid =
+    document.getElementById("imageGrid");
+
+const pageCount =
+    document.getElementById("pageCount");
+
+
+/* =================================================
+   클릭해서 업로드
+================================================= */
+
+dropZone.addEventListener(
+    "click",
+    () => {
+
+        fileInput.click();
+
+    }
+);
+
+
+fileInput.addEventListener(
+    "change",
+    event => {
+
+        addImages(event.target.files);
+
+    }
+);
+
+
+/* =================================================
+   드래그
+================================================= */
+
+dropZone.addEventListener(
+    "dragover",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.add(
+            "dragover"
+        );
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "dragleave",
+    () => {
+
+        dropZone.classList.remove(
+            "dragover"
+        );
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "drop",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.remove(
+            "dragover"
+        );
+
+        addImages(
+            event.dataTransfer.files
+        );
+
+    }
+);
+
+
+/* =================================================
+   이미지 추가
+================================================= */
+
+function addImages(files) {
+
+    const imageFiles =
+        [...files].filter(
+            file =>
+                file.type.startsWith(
+                    "image/"
+                )
+        );
+
+
+    imageFiles.forEach(file => {
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload =
+            event => {
+
+                const image = {
+
+                    id:
+                        crypto.randomUUID(),
+
+                    name:
+                        file.name,
+
+                    file:
+                        file,
+
+                    preview:
+                        event.target.result
+
+                };
+
+
+                images.push(image);
+
+
+                renderImages();
+
+
+                /*
+                    나중에 서버 업로드 기능을
+                    여기에서 연결하면 됩니다.
+
+                    uploadImage(image);
+                */
+
+            };
+
+
+        reader.readAsDataURL(file);
+
+    });
+
+}
+
+
+/* =================================================
+   화면 출력
+================================================= */
+
+function renderImages() {
+
+    imageGrid.innerHTML = "";
+
+
+    pageCount.textContent =
+        images.length +
+        " images";
+
+
+    if (images.length === 0) {
+
+        imageGrid.innerHTML = `
+
+            <div class="empty">
+
+                아직 업로드된 이미지가 없습니다.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    images.forEach(
+        (image, index) => {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "imageCard";
+
+
+            card.innerHTML = `
+
+                <div
+                    class="imagePreview"
+                >
+
+                    <img
+                        src="${image.preview}"
+                        alt=""
+                    >
+
+                </div>
+
+
+                <div
+                    class="imageInfo"
+                >
+
+                    <div
+                        class="imageNumber"
+                    >
+                        ${String(
+                            index + 1
+                        ).padStart(3, "0")}
+                    </div>
+
+
+                    <div
+                        class="imageName"
+                    >
+                        ${escapeHTML(
+                            image.name
+                        )}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="imageButtons"
+                >
+
+                    <button
+                        onclick="
+                            moveImage(
+                                ${index},
+                                -1
+                            )
+                        "
+                    >
+                        ←
+                    </button>
+
+
+                    <button
+                        onclick="
+                            moveImage(
+                                ${index},
+                                1
+                            )
+                        "
+                    >
+                        →
+                    </button>
+
+
+                    <button
+                        onclick="
+                            deleteImage(
+                                ${index}
+                            )
+                        "
+                    >
+                        삭제
+                    </button>
+
+                </div>
+
+            `;
+
+
+            imageGrid.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+/* =================================================
+   이미지 순서 변경
+================================================= */
+
+function moveImage(
+    index,
+    direction
+) {
+
+    const newIndex =
+        index + direction;
+
+
+    if (
+        newIndex < 0 ||
+        newIndex >= images.length
+    ) {
+
+        return;
+
+    }
+
+
+    const temp =
+        images[index];
+
+
+    images[index] =
+        images[newIndex];
+
+
+    images[newIndex] =
+        temp;
+
+
+    renderImages();
+
+}
+
+
+/* =================================================
+   이미지 삭제
+================================================= */
+
+function deleteImage(index) {
+
+    images.splice(
+        index,
+        1
+    );
+
+
+    renderImages();
+
+}
+
+
+/* =================================================
+   전체 삭제
+================================================= */
+
+function clearImages() {
+
+    if (
+        !confirm(
+            "모든 이미지를 삭제할까요?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    images = [];
+
+
+    renderImages();
+
+}
+
+
+/* =================================================
+   HTML escape
+================================================= */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        text;
+
+    return div.innerHTML;
+
+}
+
+
+/* =================================================
+   서버 업로드
+   -----------------------------------------------
+   지금은 비워둠.
+   나중에 Supabase / Firebase / Cloudinary
+   등을 연결할 때 이 함수만 수정하면 됨.
+================================================= */
+
+async function uploadImage(image) {
+
+    /*
+        예:
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "file",
+            image.file
+        );
+
+
+        await fetch(
+            "YOUR_UPLOAD_API",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+    */
+
+}
+
+</script>
+
+
+</body>
+
+</html>
+```
