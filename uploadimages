@@ -1,0 +1,1091 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Book Page OCR</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f4f4f4;
+    color: #222;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans KR",
+        sans-serif;
+}
+
+header {
+    background: white;
+    border-bottom: 1px solid #ddd;
+    padding: 28px 30px;
+}
+
+header h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+}
+
+header p {
+    margin: 0;
+    color: #777;
+    font-size: 14px;
+}
+
+main {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+
+/* 업로드 영역 */
+
+#dropZone {
+
+    background: white;
+
+    border: 2px dashed #aaa;
+
+    border-radius: 14px;
+
+    padding: 60px 20px;
+
+    text-align: center;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+#dropZone:hover,
+#dropZone.dragover {
+
+    border-color: #222;
+
+    background: #fafafa;
+}
+
+#dropZone strong {
+
+    display: block;
+
+    font-size: 19px;
+
+    margin-bottom: 10px;
+}
+
+#dropZone span {
+
+    color: #888;
+
+    font-size: 14px;
+}
+
+#fileInput {
+
+    display: none;
+}
+
+
+/* 버튼 */
+
+.toolbar {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    margin: 20px 0;
+}
+
+button {
+
+    border: 1px solid #ccc;
+
+    background: white;
+
+    padding: 10px 15px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+}
+
+button:hover {
+
+    background: #eaeaea;
+}
+
+button.primary {
+
+    background: #222;
+
+    color: white;
+
+    border-color: #222;
+}
+
+button:disabled {
+
+    opacity: 0.4;
+
+    cursor: not-allowed;
+}
+
+
+/* 상태 */
+
+.status {
+
+    margin: 15px 0;
+
+    padding: 12px 15px;
+
+    background: white;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+
+    color: #666;
+}
+
+
+/* 페이지 */
+
+#pages {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(190px, 1fr));
+
+    gap: 16px;
+}
+
+.page {
+
+    background: white;
+
+    border: 1px solid #ddd;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+}
+
+.page img {
+
+    width: 100%;
+
+    height: 250px;
+
+    object-fit: contain;
+
+    background: #eee;
+
+    display: block;
+}
+
+.pageInfo {
+
+    padding: 10px;
+
+    font-size: 12px;
+
+    color: #666;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.pageButtons {
+
+    display: flex;
+
+    gap: 5px;
+
+    padding: 0 10px 10px;
+}
+
+.pageButtons button {
+
+    flex: 1;
+
+    padding: 7px;
+
+    font-size: 12px;
+}
+
+
+/* OCR 결과 */
+
+#ocrResult {
+
+    margin-top: 30px;
+
+    background: white;
+
+    border-radius: 10px;
+
+    padding: 20px;
+}
+
+#ocrText {
+
+    width: 100%;
+
+    min-height: 400px;
+
+    resize: vertical;
+
+    padding: 15px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 8px;
+
+    font-family: monospace;
+
+    line-height: 1.6;
+}
+
+.empty {
+
+    text-align: center;
+
+    padding: 60px 20px;
+
+    color: #999;
+}
+
+.progress {
+
+    width: 100%;
+
+    height: 8px;
+
+    background: #ddd;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    margin-top: 10px;
+}
+
+.progressBar {
+
+    width: 0%;
+
+    height: 100%;
+
+    background: #222;
+
+    transition: width 0.2s;
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<header>
+
+    <h1>Book Page OCR</h1>
+
+    <p>
+        책 페이지 이미지를 모아 OCR 텍스트와 PDF를 만듭니다.
+    </p>
+
+</header>
+
+
+<main>
+
+
+<!-- 업로드 -->
+
+<div id="dropZone">
+
+    <strong>
+        📚 책 페이지를 여기에 드래그하세요
+    </strong>
+
+    <span>
+        JPG / PNG 여러 장을 한꺼번에 넣을 수 있습니다.
+    </span>
+
+    <input
+        type="file"
+        id="fileInput"
+        accept="image/*"
+        multiple
+    >
+
+</div>
+
+
+<!-- 버튼 -->
+
+<div class="toolbar">
+
+    <button
+        class="primary"
+        id="ocrButton"
+        onclick="runOCR()"
+    >
+        OCR 시작
+    </button>
+
+
+    <button
+        onclick="makePDF()"
+    >
+        PDF 만들기
+    </button>
+
+
+    <button
+        onclick="downloadTXT()"
+    >
+        OCR TXT 저장
+    </button>
+
+
+    <button
+        onclick="clearAll()"
+    >
+        전체 삭제
+    </button>
+
+</div>
+
+
+<!-- 상태 -->
+
+<div class="status">
+
+    <div id="statusText">
+        페이지 0장
+    </div>
+
+    <div class="progress">
+
+        <div
+            id="progressBar"
+            class="progressBar"
+        ></div>
+
+    </div>
+
+</div>
+
+
+<!-- 페이지 -->
+
+<div id="pages">
+
+    <div class="empty">
+
+        아직 이미지가 없습니다.
+
+    </div>
+
+</div>
+
+
+<!-- OCR 결과 -->
+
+<div id="ocrResult">
+
+    <h2>OCR 결과</h2>
+
+    <p>
+        OCR을 실행하면 여기에서 텍스트를 확인하고
+        수정할 수 있습니다.
+    </p>
+
+    <textarea
+        id="ocrText"
+        placeholder="OCR 결과가 여기에 나타납니다."
+    ></textarea>
+
+</div>
+
+
+</main>
+
+
+<!-- PDF 라이브러리 -->
+
+<script
+src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+</script>
+
+
+<!-- OCR 라이브러리 -->
+
+<script
+src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+</script>
+
+
+<script>
+
+
+/* ============================
+   데이터
+============================ */
+
+let pages = [];
+
+let ocrResult = "";
+
+
+/* ============================
+   업로드
+============================ */
+
+const dropZone =
+    document.getElementById("dropZone");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+
+dropZone.addEventListener(
+    "click",
+    () => {
+
+        fileInput.click();
+
+    }
+);
+
+
+fileInput.addEventListener(
+    "change",
+    event => {
+
+        addFiles(event.target.files);
+
+    }
+);
+
+
+/* 드래그 */
+
+dropZone.addEventListener(
+    "dragover",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.add("dragover");
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "dragleave",
+    () => {
+
+        dropZone.classList.remove("dragover");
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "drop",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.remove("dragover");
+
+        addFiles(event.dataTransfer.files);
+
+    }
+);
+
+
+/* ============================
+   파일 추가
+============================ */
+
+function addFiles(files) {
+
+    const imageFiles =
+        [...files].filter(
+            file => file.type.startsWith("image/")
+        );
+
+
+    imageFiles.forEach(file => {
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload = function(event) {
+
+            pages.push({
+
+                name: file.name,
+
+                data: event.target.result
+
+            });
+
+
+            renderPages();
+
+        };
+
+
+        reader.readAsDataURL(file);
+
+    });
+
+}
+
+
+/* ============================
+   페이지 화면
+============================ */
+
+function renderPages() {
+
+    const container =
+        document.getElementById("pages");
+
+
+    container.innerHTML = "";
+
+
+    document.getElementById("statusText")
+        .textContent =
+        "페이지 " + pages.length + "장";
+
+
+    if (pages.length === 0) {
+
+        container.innerHTML = `
+
+            <div class="empty">
+
+                아직 이미지가 없습니다.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    pages.forEach(
+        (page, index) => {
+
+
+        const div =
+            document.createElement("div");
+
+
+        div.className = "page";
+
+
+        div.innerHTML = `
+
+            <img src="${page.data}">
+
+            <div class="pageInfo">
+
+                ${index + 1}.
+                ${page.name}
+
+            </div>
+
+            <div class="pageButtons">
+
+                <button
+                    onclick="movePage(${index}, -1)"
+                >
+                    ←
+                </button>
+
+                <button
+                    onclick="movePage(${index}, 1)"
+                >
+                    →
+                </button>
+
+                <button
+                    onclick="deletePage(${index})"
+                >
+                    삭제
+                </button>
+
+            </div>
+
+        `;
+
+
+        container.appendChild(div);
+
+    });
+
+}
+
+
+/* ============================
+   순서 변경
+============================ */
+
+function movePage(index, direction) {
+
+    const newIndex =
+        index + direction;
+
+
+    if (
+        newIndex < 0 ||
+        newIndex >= pages.length
+    ) {
+
+        return;
+
+    }
+
+
+    const temp =
+        pages[index];
+
+
+    pages[index] =
+        pages[newIndex];
+
+
+    pages[newIndex] =
+        temp;
+
+
+    renderPages();
+
+}
+
+
+/* ============================
+   삭제
+============================ */
+
+function deletePage(index) {
+
+    pages.splice(index, 1);
+
+    renderPages();
+
+}
+
+
+/* ============================
+   전체 삭제
+============================ */
+
+function clearAll() {
+
+    if (
+        !confirm(
+            "모든 페이지를 삭제할까요?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    pages = [];
+
+    ocrResult = "";
+
+    document.getElementById("ocrText")
+        .value = "";
+
+
+    renderPages();
+
+}
+
+
+/* ============================
+   OCR
+============================ */
+
+async function runOCR() {
+
+    if (pages.length === 0) {
+
+        alert(
+            "먼저 책 페이지 이미지를 넣어주세요."
+        );
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById("ocrButton");
+
+
+    button.disabled = true;
+
+    button.textContent =
+        "OCR 진행 중...";
+
+
+    ocrResult = "";
+
+
+    const output =
+        document.getElementById("ocrText");
+
+
+    output.value = "";
+
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+
+    try {
+
+        const worker =
+            await Tesseract.createWorker(
+                "eng",
+                1,
+                {
+
+                    logger: message => {
+
+                        if (
+                            message.status ===
+                            "recognizing text"
+                        ) {
+
+                            const percent =
+                                Math.round(
+                                    message.progress * 100
+                                );
+
+
+                            progressBar.style.width =
+                                percent + "%";
+
+
+                            document.getElementById(
+                                "statusText"
+                            ).textContent =
+                                "OCR 진행 중... " +
+                                percent +
+                                "%";
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+        for (
+            let i = 0;
+            i < pages.length;
+            i++
+        ) {
+
+            document.getElementById(
+                "statusText"
+            ).textContent =
+                "페이지 " +
+                (i + 1) +
+                " / " +
+                pages.length +
+                " OCR 중";
+
+
+            const result =
+                await worker.recognize(
+                    pages[i].data
+                );
+
+
+            ocrResult +=
+                "\n\n====================\n" +
+                "PAGE " +
+                (i + 1) +
+                "\n" +
+                "====================\n\n";
+
+
+            ocrResult +=
+                result.data.text;
+
+
+            output.value =
+                ocrResult;
+
+        }
+
+
+        await worker.terminate();
+
+
+        progressBar.style.width =
+            "100%";
+
+
+        document.getElementById(
+            "statusText"
+        ).textContent =
+            "OCR 완료 — " +
+            pages.length +
+            "페이지";
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            "OCR 중 오류가 발생했습니다.\n\n" +
+            error.message
+        );
+
+    }
+
+
+    button.disabled = false;
+
+    button.textContent =
+        "OCR 시작";
+
+}
+
+
+/* ============================
+   TXT 다운로드
+============================ */
+
+function downloadTXT() {
+
+    if (!ocrResult) {
+
+        alert(
+            "먼저 OCR을 실행해주세요."
+        );
+
+        return;
+
+    }
+
+
+    const blob =
+        new Blob(
+            [ocrResult],
+            {
+                type:
+                    "text/plain;charset=utf-8"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const link =
+        document.createElement("a");
+
+
+    link.href = url;
+
+    link.download =
+        "book_ocr.txt";
+
+
+    link.click();
+
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+/* ============================
+   PDF
+============================ */
+
+async function makePDF() {
+
+    if (pages.length === 0) {
+
+        alert(
+            "먼저 이미지를 추가해주세요."
+        );
+
+        return;
+
+    }
+
+
+    const { jsPDF } =
+        window.jspdf;
+
+
+    let pdf = null;
+
+
+    for (
+        let i = 0;
+        i < pages.length;
+        i++
+    ) {
+
+        const img =
+            await loadImage(
+                pages[i].data
+            );
+
+
+        const width =
+            img.width;
+
+
+        const height =
+            img.height;
+
+
+        const orientation =
+            width > height
+                ? "landscape"
+                : "portrait";
+
+
+        if (i === 0) {
+
+            pdf =
+                new jsPDF({
+
+                    orientation:
+                        orientation,
+
+                    unit: "px",
+
+                    format:
+                        [width, height]
+
+                });
+
+        }
+
+        else {
+
+            pdf.addPage(
+
+                [width, height],
+
+                orientation
+
+            );
+
+        }
+
+
+        pdf.addImage(
+
+            img,
+
+            "JPEG",
+
+            0,
+
+            0,
+
+            width,
+
+            height
+
+        );
+
+    }
+
+
+    pdf.save(
+        "book_pages.pdf"
+    );
+
+}
+
+
+/* ============================
+   이미지 로딩
+============================ */
+
+function loadImage(src) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const img =
+                new Image();
+
+
+            img.onload =
+                () => resolve(img);
+
+
+            img.onerror =
+                reject;
+
+
+            img.src = src;
+
+        }
+    );
+
+}
+
+</script>
+
+</body>
+</html>
+```
+
